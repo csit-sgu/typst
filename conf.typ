@@ -21,7 +21,7 @@
 #let strings = (
   title: (
     minobrnauki: "МИНОБРНАУКИ РОССИИ\nФедеральное государственное бюджетное образовательное учреждение\nвысшего образования\n",
-    sgu: ["САРАТОВСКИЙ НАЦИОНАЛЬНЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ ИМЕНИ Н. Г. ЧЕРНЫШЕВСКОГО"],
+    sgu: ["САРАТОВСКИЙ НАЦИОНАЛЬНЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ ИМЕНИ~Н.~Г.~ЧЕРНЫШЕВСКОГО"],
     city: "Саратов",
     worktypes: (
       referat: [РЕФЕРАТ],
@@ -215,10 +215,11 @@
      */
     _default_body: data => {
       set align(center)
-      v(3cm)
+      v(2.7cm)
       text(weight: "bold", upper(data.title))
+      v(0.3em)
       par(data.worktype)
-      v(1.5cm)
+      v(2.1cm)
       set align(left)
       text(data.group + "\n")
       text(data.speciality + "\n")
@@ -236,12 +237,13 @@
      * Подпись "Проверено:" для титульного листа
      */
     _signature: (post, name) => {
-      text("Проверено:\n")
+      text("Проверено:")
+      v(line_spacing, weak: true)
       grid(
         columns: (1fr,) * 3,
         align: (left, center, right),
         row-gutter: 5pt,
-        post, block(inset: (y: 13pt), line(length: 3cm, stroke: .4pt)), name
+        post, block(inset: (y: 10pt), line(length: 3cm, stroke: .4pt)), name,
       )
     },
     /*
@@ -349,9 +351,7 @@
      */
     make_toc: (info: ()) => {
       show outline.entry.where(level: 1): it => {
-        let heading-text = it
-          .at("element", default: (:))
-          .at("body", default: "")
+        let heading-text = it.at("element", default: (:)).at("body", default: "")
 
         let is-outlined = it.element.outlined
         let is-annex = state("annex", false).at(it.element.location())
@@ -377,12 +377,7 @@
           it.element.location(),
           it.indented(
             none,
-            prefix
-              + sym.space
-              + box(width: 1fr, it.fill)
-              + sym.space
-              + sym.wj
-              + it.page(),
+            prefix + sym.space + box(width: 1fr, it.fill) + sym.space + sym.wj + it.page(),
           ),
         )
       }
@@ -405,6 +400,7 @@
         ),
       )
       set text(size: font_size, lang: "ru", font: "Times New Roman")
+      set par(leading: line_spacing, spacing: line_spacing)
 
       if settings.title_page.at("enabled", default: true) {
         (self.title.make)(self, info)
@@ -419,8 +415,6 @@
         justify: true,
         // отвечает за красные строки там, где их нет, но они должны быть
         first-line-indent: (amount: indent, all: true),
-        leading: line_spacing,
-        spacing: line_spacing,
       )
 
       // Вывод содержания
@@ -429,7 +423,7 @@
       }
 
       // Оформление элементов содержимого документа
-      set ref(supplement: "")
+      set ref(supplement: none)
       set heading(numbering: "1.1", hanging-indent: -indent)
       set page(
         footer: context [
