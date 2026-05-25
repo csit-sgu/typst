@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="never">
+  <info>
+    <title>ГОСТ 7.1-2003 (как BibTeX-стиль ugost2003)</title>
+    <id>ugost2003-typst</id>
+    <category citation-format="numeric"/>
+    <updated>2026-10-23T00:00:00+00:00</updated>
+    <summary>
+      Повторяет вывод BibTeX-стиля ugost2003 из пакета gost.
+
+      Язык записи определяется как в ugost2003: если в записи задано поле
+      language (например, language = {russian}), используются русские
+      сокращения (Т., №, С., Режим доступа), иначе английские (Vol., no., P.).
+
+      Работает только вместе с show-правилом из conf.typ. CSL не умеет
+      проверять число авторов, поэтому стиль окружает первого автора в
+      заголовке записи (U+E006–U+E008) и часть «/ все авторы» (U+E000–U+E003)
+      служебными символами и выводит число авторов. Show-правило оставляет
+      первого автора в заголовке при одном–трёх авторах, а «/ все авторы» —
+      при двух и более, как ugost2003. Оно же заменяет «&amp;» на «and» в
+      английских записях,
+      переводит тип диссертации (U+E004, U+E005), убирает двойную точку
+      перед тире и ставит неразрывные пробелы между инициалами.
+    </summary>
+    <rights license="http://creativecommons.org/licenses/by-sa/3.0/">This work is licensed under a Creative Commons Attribution-ShareAlike 3.0 License</rights>
+  </info>
+
+  <locale>
+    <terms>
+      <term name="and others"></term>
+    </terms>
+  </locale>
+
+  <!-- ____________________ Термины, зависящие от языка записи ____________________ -->
+
+  <macro name="volume">
+    <group delimiter="&#160;">
+      <choose>
+        <if variable="language"><text value="Т."/></if>
+        <else><text value="Vol."/></else>
+      </choose>
+      <text variable="volume"/>
+    </group>
+  </macro>
+
+  <macro name="issue">
+    <group delimiter="&#160;">
+      <choose>
+        <if variable="language"><text value="№"/></if>
+        <else><text value="no."/></else>
+      </choose>
+      <text variable="issue"/>
+    </group>
+  </macro>
+
+  <macro name="pages">
+    <choose>
+      <if variable="page">
+        <group delimiter="&#160;">
+          <choose>
+            <if variable="language"><text value="С."/></if>
+            <else><text value="P."/></else>
+          </choose>
+          <text variable="page"/>
+        </group>
+      </if>
+      <else-if variable="number-of-pages">
+        <group delimiter="&#160;">
+          <text variable="number-of-pages"/>
+          <choose>
+            <if variable="language"><text value="с."/></if>
+            <else><text value="p."/></else>
+          </choose>
+        </group>
+      </else-if>
+    </choose>
+  </macro>
+
+  <macro name="edition">
+    <group delimiter=" ">
+      <text variable="edition"/>
+      <choose>
+        <if variable="language"><text value="изд."/></if>
+        <else><text value="ed."/></else>
+      </choose>
+    </group>
+  </macro>
+
+  <macro name="series">
+    <group delimiter=" ">
+      <text variable="collection-title"/>
+      <group delimiter="&#160;">
+        <choose>
+          <if variable="collection-number">
+            <choose>
+              <if variable="language"><text value="№"/></if>
+              <else><text value="no."/></else>
+            </choose>
+          </if>
+        </choose>
+        <text variable="collection-number"/>
+      </group>
+    </group>
+  </macro>
+
+  <!-- Тип диссертации. U+E004 (русская запись) и U+E005 (английская) нужны
+       show-правилу, чтобы заменить «Doctoral dissertation» и «Master's
+       thesis», которые Typst подставляет для @phdthesis и @mastersthesis -->
+  <macro name="thesis-type">
+    <choose>
+      <if variable="language">
+        <text variable="genre" prefix="&#xE004;"/>
+      </if>
+      <else>
+        <text variable="genre" prefix="&#xE005;"/>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="url">
+    <choose>
+      <if variable="URL">
+        <group delimiter=" ">
+          <group delimiter=": ">
+            <choose>
+              <if variable="language"><text value="Режим доступа"/></if>
+              <else><text value="Access mode"/></else>
+            </choose>
+            <text variable="URL"/>
+          </group>
+          <group delimiter=": " prefix="(" suffix=")">
+            <choose>
+              <if variable="accessed">
+                <choose>
+                  <if variable="language"><text value="дата обращения"/></if>
+                  <else><text value="online; accessed"/></else>
+                </choose>
+              </if>
+            </choose>
+            <date variable="accessed">
+              <date-part name="day" form="numeric-leading-zeros" suffix="."/>
+              <date-part name="month" form="numeric-leading-zeros" suffix="."/>
+              <date-part name="year"/>
+            </date>
+          </group>
+        </group>
+      </if>
+    </choose>
+  </macro>
+
+  <!-- ________________________________ Авторы ________________________________ -->
+
+  <!-- Заголовок записи: первый автор, show-правило оставляет его только при
+       одном–трёх авторах. U+E006 число U+E007 автор U+E008 -->
+  <macro name="head">
+    <group>
+      <text value="&#xE006;"/>
+      <names variable="author">
+        <name form="count"/>
+      </names>
+      <text value="&#xE007;"/>
+      <names variable="author">
+        <name et-al-min="2" et-al-use-first="1"/>
+        <et-al term="and others"/>
+      </names>
+      <text value="&#xE008;"/>
+    </group>
+  </macro>
+
+  <!-- «/ все авторы»: show-правило оставляет её только при двух и более
+       авторах. U+E000 число U+E001 часть U+E002 -->
+  <macro name="rest">
+    <group>
+      <text value="&#xE000;"/>
+      <names variable="author">
+        <name form="count"/>
+      </names>
+      <text value="&#xE001;"/>
+      <choose>
+        <if variable="language">
+          <names variable="author" prefix="&#160;/ ">
+            <name and="text" delimiter=", " delimiter-precedes-last="never"/>
+          </names>
+        </if>
+        <else>
+          <names variable="author" prefix="&#160;/ ">
+            <name and="symbol" delimiter=", " delimiter-precedes-last="contextual"/>
+          </names>
+        </else>
+      </choose>
+      <text value="&#xE002;"/>
+    </group>
+  </macro>
+
+  <!-- Редакторы. U+E003 заменяется на «/» или «;» в зависимости от того,
+       осталась ли перед ними часть «/ все авторы» -->
+  <macro name="editors">
+    <choose>
+      <if variable="editor">
+        <group prefix="&#xE003;">
+          <choose>
+            <if variable="language"><text value="под ред."/></if>
+            <else><text value="ed. by"/></else>
+          </choose>
+          <names variable="editor" prefix=" ">
+            <name et-al-min="5" et-al-use-first="3" delimiter=", "/>
+          </names>
+        </group>
+      </if>
+    </choose>
+  </macro>
+
+  <!-- ______________________________ Части записи ______________________________ -->
+
+  <!-- Точку после автора ставит show-правило -->
+  <macro name="head-title">
+    <group>
+      <text macro="head"/>
+      <text macro="title"/>
+    </group>
+  </macro>
+
+  <!-- Название с обозначением носителя -->
+  <macro name="title">
+    <group delimiter=" ">
+      <text variable="title"/>
+      <choose>
+        <if variable="title">
+          <choose>
+            <if type="webpage post post-weblog software dataset" match="any">
+              <choose>
+                <if variable="language"><text value="[Электронный ресурс онлайн]"/></if>
+                <else><text value="[Electronic resource online]"/></else>
+              </choose>
+            </if>
+            <else-if variable="language"><text value="[Текст]"/></else-if>
+            <else><text value="[Text]"/></else>
+          </choose>
+        </if>
+      </choose>
+    </group>
+  </macro>
+
+  <!-- Место и издательство; пропущенные заменяются на «[Б. м.]» и «[б. и.]» -->
+  <macro name="place-publisher">
+    <choose>
+      <if variable="publisher-place">
+        <group delimiter="&#160;: ">
+          <text variable="publisher-place"/>
+          <choose>
+            <if variable="publisher"><text variable="publisher"/></if>
+            <else-if variable="language"><text value="[б. и.]"/></else-if>
+            <else><text value="[s. n.]"/></else>
+          </choose>
+        </group>
+      </if>
+      <else-if variable="publisher">
+        <group delimiter="&#160;: ">
+          <choose>
+            <if variable="language"><text value="[Б. м.]"/></if>
+            <else><text value="[S. l.]"/></else>
+          </choose>
+          <text variable="publisher"/>
+        </group>
+      </else-if>
+      <else-if variable="language">
+        <text value="[Б. м.&#160;: б. и.]"/>
+      </else-if>
+      <else>
+        <text value="[S. l.&#160;: s. n.]"/>
+      </else>
+    </choose>
+  </macro>
+
+  <macro name="publication">
+    <group delimiter=", ">
+      <text macro="place-publisher"/>
+      <date variable="issued">
+        <date-part name="year"/>
+      </date>
+    </group>
+  </macro>
+
+  <macro name="year">
+    <date variable="issued">
+      <date-part name="year"/>
+    </date>
+  </macro>
+
+  <!-- Примечание и адрес: после примечания адрес идёт через точку,
+       без примечания — через точку и тире -->
+  <macro name="note-url">
+    <choose>
+      <if variable="note">
+        <group delimiter=". ">
+          <text variable="note"/>
+          <text macro="url"/>
+        </group>
+      </if>
+      <else>
+        <text macro="url"/>
+      </else>
+    </choose>
+  </macro>
+
+  <!-- _______________________________ Ссылки _______________________________ -->
+
+  <citation collapse="citation-number">
+    <sort>
+      <key variable="citation-number"/>
+    </sort>
+    <layout prefix="[" suffix="]" delimiter=", ">
+      <group delimiter=", ">
+        <text variable="citation-number"/>
+        <group delimiter="&#160;">
+          <label variable="locator" form="short"/>
+          <text variable="locator"/>
+        </group>
+      </group>
+    </layout>
+  </citation>
+
+  <!-- ____________________________ Список литературы ____________________________ -->
+
+  <bibliography second-field-align="flush" name-as-sort-order="all" sort-separator=",&#160;">
+    <layout suffix=".">
+      <text variable="citation-number"/>
+      <choose>
+        <!-- Статья в журнале -->
+        <if type="article-journal article-magazine article-newspaper article" match="any">
+          <group delimiter=".&#160;— ">
+            <group>
+              <text macro="head-title"/>
+              <text macro="rest"/>
+              <text variable="container-title" prefix="&#160;// "/>
+            </group>
+            <text macro="year"/>
+            <group delimiter=", ">
+              <text macro="volume"/>
+              <text macro="issue"/>
+            </group>
+            <text macro="pages"/>
+            <text macro="note-url"/>
+          </group>
+        </if>
+        <!-- Доклад в трудах конференции -->
+        <else-if type="paper-conference">
+          <group delimiter=".&#160;— ">
+            <group>
+              <text macro="head-title"/>
+              <text macro="rest"/>
+              <text variable="container-title" prefix="&#160;// "/>
+              <text macro="editors"/>
+            </group>
+            <text macro="place-publisher"/>
+            <text macro="year"/>
+            <group delimiter=", ">
+              <text macro="volume"/>
+              <text macro="series"/>
+            </group>
+            <text macro="pages"/>
+            <text macro="note-url"/>
+          </group>
+        </else-if>
+        <!-- Часть книги или сборника -->
+        <else-if type="chapter entry-encyclopedia entry-dictionary" match="any">
+          <group delimiter=".&#160;— ">
+            <group>
+              <text macro="head-title"/>
+              <text macro="rest"/>
+              <text variable="container-title" prefix="&#160;// "/>
+              <text macro="editors"/>
+            </group>
+            <text macro="edition"/>
+            <text macro="publication"/>
+            <group delimiter=", ">
+              <text macro="volume"/>
+              <text macro="series"/>
+            </group>
+            <text macro="pages"/>
+            <text macro="note-url"/>
+          </group>
+        </else-if>
+        <!-- Диссертация, ВКР -->
+        <else-if type="thesis">
+          <group delimiter=".&#160;— ">
+            <group>
+              <text macro="head-title"/>
+              <text macro="thesis-type" prefix="&#160;: "/>
+              <text variable="number" prefix="&#160;: "/>
+              <text macro="rest"/>
+              <text variable="authority" prefix="&#160;; "/>
+            </group>
+            <text macro="publication"/>
+            <text macro="pages"/>
+            <text macro="note-url"/>
+          </group>
+        </else-if>
+        <!-- Отчёт -->
+        <else-if type="report">
+          <group delimiter=".&#160;— ">
+            <group>
+              <text macro="title"/>
+              <text variable="genre" prefix="&#160;: "/>
+              <text variable="number" prefix="&#160;: "/>
+              <choose>
+                <if variable="authority">
+                  <text variable="authority" prefix="&#160;/ "/>
+                </if>
+                <else>
+                  <text variable="publisher" prefix="&#160;/ "/>
+                </else>
+              </choose>
+            </group>
+            <group delimiter=", ">
+              <text variable="publisher-place"/>
+              <text macro="year"/>
+            </group>
+            <text macro="pages"/>
+            <text macro="note-url"/>
+          </group>
+        </else-if>
+        <!-- Электронный ресурс -->
+        <else-if type="webpage post post-weblog software dataset" match="any">
+          <group delimiter=". ">
+            <group delimiter=".&#160;— ">
+              <group>
+                <text macro="head-title"/>
+                <text variable="container-title" prefix="&#160;// "/>
+              </group>
+              <text macro="publication"/>
+              <text macro="url"/>
+            </group>
+            <text variable="note"/>
+          </group>
+        </else-if>
+        <!-- Книга и всё остальное -->
+        <else>
+          <group delimiter=".&#160;— ">
+            <group delimiter=". ">
+              <group>
+                <text macro="head-title"/>
+                <text macro="rest"/>
+                <text macro="editors"/>
+              </group>
+              <text macro="series"/>
+            </group>
+            <text macro="edition"/>
+            <text macro="publication"/>
+            <text macro="volume"/>
+            <text macro="pages"/>
+            <group delimiter=":&#160;">
+              <choose>
+                <if variable="ISBN"><text value="ISBN"/></if>
+              </choose>
+              <text variable="ISBN"/>
+            </group>
+            <text macro="note-url"/>
+          </group>
+        </else>
+      </choose>
+    </layout>
+  </bibliography>
+</style>
