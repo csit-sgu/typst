@@ -1,5 +1,5 @@
 #import "@preview/ctheorems:1.1.3": *
-#import "@preview/zebraw:0.5.5": zebraw, zebraw-init
+#import "@preview/codly:2.0.0" as codly
 #import "@preview/subpar:0.2.2"
 
 /*
@@ -64,6 +64,7 @@
 
 // Переменная отвечающая за размер отступа красной строки
 #let indent = 1.25cm
+#let main_font = "Times New Roman"
 #let font_size = 14pt
 #let figure_font_size = font_size - 2pt
 // #let linespace = font_size
@@ -73,19 +74,23 @@
 #let sequence = [].func()
 
 #let code_font_size = font_size - 2pt
-// TODO: надо выяснить сколько нужно приплюсовывать к -indent без хардкода
-#let code_block_move = -indent + 11pt
+#let code_raw_size = 0.8 * code_font_size
+#let code_numbering_font_args = (font: main_font, size: 6pt)
+// Расстояние от номеров строк до кода (numbersep в fancyvrb)
+#let code_numbering_sep = 12pt
 
+// Маркер переноса как в minted (breaklines): стрелка, продолжение строки
+// отступает от исходного отступа на 4 символа, стрелка стоит в 1em от текста.
+// codly сам добавляет к ширине маркера 0.3em
+#let code_wrap_marker = context box(
+  width: measure("xxxx").width - 0.3em,
+  align(right, text(size: 6pt, $arrow.r.hook$) + h(1em - 0.3em)),
+)
+
+// Обёртка для блоков кода из show-правила
 #let code-block-raw(code) = {
-  set text(size: code_font_size)
-  // TODO: нужно выяснить почему нужно переоборачивать raw, чтобы размер был
-  // правильным
-  move(dx: code_block_move, zebraw(raw(block: true, code.text)))
-}
-
-#let code-block(..args, code) = {
-  set text(size: code_font_size)
-  move(dx: code_block_move, zebraw(..args, code))
+  set text(size: code_raw_size)
+  codly.new(code)
 }
 
 #let modules = (
@@ -404,7 +409,7 @@
           right: 1.5cm,
         ),
       )
-      set text(size: font_size, lang: "ru", font: "Times New Roman")
+      set text(size: font_size, lang: "ru", font: main_font)
 
       if settings.title_page.at("enabled", default: true) {
         (self.title.make)(self, info)
@@ -412,6 +417,34 @@
 
       show: thmrules.with(qed-symbol: $square$)
       show heading: self.document.apply_heading_styles
+      set raw(theme: none)
+      show: codly.set_(
+        wrap-marker: code_wrap_marker,
+        lang-position: none,
+        radius: 0pt,
+        padding: 0pt,
+        column-gutter: 0pt,
+      )
+      show: codly.line-set_(
+        fill: none,
+        stroke: none,
+        radius: 0pt,
+        inset: (x: 0pt, y: 0.32em),
+      )
+      show: codly.number-set_(
+        placement: "outside",
+        align: left + top,
+        fill: none,
+        // Распорка высотой measure[1].height в шрифте кода, как у codly в
+        // начале строки кода: базовая линия номера совпадает с базовой линией
+        // кода
+        numbering: n => place(
+          top + right,
+          dx: -code_numbering_sep,
+          // wj: в ячейке нулевой ширины номер не переносится за распорку
+          context box(height: measure[1].height) + sym.wj + text(..code_numbering_font_args, str(n)),
+        ),
+      )
       show raw.where(block: true): code-block-raw
 
       set par(
@@ -429,7 +462,7 @@
       }
 
       // Оформление элементов содержимого документа
-      set ref(supplement: "")
+      set ref(supplement: none)
       set heading(numbering: "1.1", hanging-indent: -indent)
       set page(
         footer: context [
@@ -580,7 +613,6 @@
     info: info,
     settings,
     [
-      #show: zebraw-init.with(background-color: auto, hanging-indent: true)
       #doc
     ],
   )
