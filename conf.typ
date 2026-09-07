@@ -22,6 +22,14 @@
   title: (
     minobrnauki: "МИНОБРНАУКИ РОССИИ\nФедеральное государственное бюджетное образовательное учреждение\nвысшего образования\n",
     sgu: ["САРАТОВСКИЙ НАЦИОНАЛЬНЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ ИМЕНИ~Н.~Г.~ЧЕРНЫШЕВСКОГО"],
+    chair: "Кафедра",
+    chairs: (
+      cyb: "математической кибернетики и компьютерных наук",
+      kb: "теоретических основ компьютерной безопасности и криптографии ",
+      sau: "системного анализа и автоматического управления",
+      info_prog: "информатики и программирования",
+      diskr: "дискретной математики и информационных технологий",
+    ),
     city: "Саратов",
     worktypes: (
       referat: [РЕФЕРАТ],
@@ -207,6 +215,27 @@
       set align(left)
     },
     /*
+     * Отвечает за вывод названия кафедры на титульном листе
+     */
+    _default_chair: (self, info) => {
+      let chair_key = info.at("chair", default: none)
+      let show_chair = chair_key != none and info.type == "coursework"
+      let chair_string = if chair_key != none {
+        (self.utils.strglue)(strings.title.chair, strings.title.chairs.at(chair_key))
+      } else {
+        strings.title.chair // заглушка, только чтобы блок имел ту же высоту
+      }
+      let chair_block = align(center, {
+        v(0.5em)
+        text(chair_string)
+      })
+      if show_chair {
+        chair_block
+      } else {
+        hide(chair_block)
+      }
+    },
+    /*
      * Отвечает за вывод тела титульного листа: заголовок (название работы,
      * если не определено иное), тип работы, информация об авторе
      *
@@ -215,7 +244,7 @@
      */
     _default_body: data => {
       set align(center)
-      v(2.7cm)
+      v(2cm)
       text(weight: "bold", upper(data.title))
       v(0.3em)
       par(data.worktype)
@@ -320,6 +349,7 @@
     make: (self, info) => {
       let strs = (self.title._get_strings)(self, info)
       (self.title._default_header)()
+      (self.title._default_chair)(self, info)
       (self.title._default_body)(strs)
       v(1fr)
       (self.title._signature)(info.inspector.degree, info.inspector.name)
