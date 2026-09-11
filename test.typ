@@ -1,4 +1,4 @@
-#import "conf.typ": conf, intro, conclusion
+#import "conf.typ": conclusion, conf, intro
 #show: conf.with(
   title: [Применение шаблона для typst],
   type: "referat",
@@ -13,6 +13,11 @@
       degree: "",
       name: "",
     ),
+    chair_head: (
+      degree: "доцент, к. ф.-м. н.",
+      name: "С. В. Миронов",
+    ),
+    chair: "cyb",
   ),
   settings: (
     title_page: (

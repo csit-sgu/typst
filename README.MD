@@ -15,7 +15,12 @@
       inspector: (
         degree: "доцент, к. ф.-м. н.",
         name: "С. В. Миронов"
-      )
+      ),
+      chair_head: (
+        degree: "доцент, к. ф.-м. н.",
+        name: "С. В. Миронов"
+      ),
+      chair: "cyb",
   ),
   settings: (
     title_page: (
