@@ -263,10 +263,10 @@
       text(strings.title.city + " " + str(datetime.today().year()))
     },
     /*
-     * Подпись "Проверено:" для титульного листа
+     * Подпись для титульного листа
      */
-    _signature: (post, name) => {
-      text("Проверено:")
+    _signature: (annotation, post, name) => {
+      annotation
       v(line_spacing, weak: true)
       grid(
         columns: (1fr,) * 3,
@@ -274,6 +274,20 @@
         row-gutter: 5pt,
         post, block(inset: (y: 10pt), line(length: 3cm, stroke: .4pt)), name,
       )
+    },
+    /*
+     * Блок подписей для титульного листа
+     */
+    _default_signatures: (self, info) => {
+      let inspector_annotation = if (info.type == "referat") {
+        "Проверено :"
+      } else if (info.type == "coursework") {
+        "Научный руководитель"
+      }
+      (self.title._signature)(inspector_annotation, info.inspector.degree, info.inspector.name)
+      if (info.type == "coursework") {
+        (self.title._signature)("Заведующий кафедрой", info.chair_head.degree, info.chair_head.name)
+      }
     },
     /*
      * Строка "студента такой-то группы" для титульного листа
@@ -352,7 +366,7 @@
       (self.title._default_chair)(self, info)
       (self.title._default_body)(strs)
       v(1fr)
-      (self.title._signature)(info.inspector.degree, info.inspector.name)
+      (self.title._default_signatures)(self, info)
       (self.title._default_footer)()
     },
   ),
