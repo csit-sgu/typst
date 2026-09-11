@@ -22,7 +22,6 @@
   title: (
     minobrnauki: "МИНОБРНАУКИ РОССИИ\nФедеральное государственное бюджетное образовательное учреждение\nвысшего образования\n",
     sgu: ["САРАТОВСКИЙ НАЦИОНАЛЬНЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ ИМЕНИ~Н.~Г.~ЧЕРНЫШЕВСКОГО"],
-    chair: "Кафедра",
     chairs: (
       cyb: "математической кибернетики и компьютерных наук",
       kb: "теоретических основ компьютерной безопасности и криптографии ",
@@ -218,12 +217,13 @@
      * Отвечает за вывод названия кафедры на титульном листе
      */
     _default_chair: (self, info) => {
+      let chair = "Кафедра"
       let chair_key = info.at("chair", default: none)
       let show_chair = chair_key != none and info.type == "coursework"
       let chair_string = if chair_key != none {
-        (self.utils.strglue)(strings.title.chair, strings.title.chairs.at(chair_key))
+        (self.utils.strglue)(chair, strings.title.chairs.at(chair_key))
       } else {
-        strings.title.chair // заглушка, только чтобы блок имел ту же высоту
+        chair // заглушка, только чтобы блок имел ту же высоту
       }
       let chair_block = align(center, {
         v(0.5em)
