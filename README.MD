@@ -1,6 +1,6 @@
 Пример использования:
 ```typst
-#import "conf.typ" : conf
+#import "conf.typ" : conf, chairs
 #import "conf.typ" : turn-on-first-line-indentation
 #show: conf.with(
   title: [Тема работы],
@@ -20,7 +20,7 @@
         degree: "доцент, к. ф.-м. н.",
         name: "С. В. Миронов"
       ),
-      chair: "cyb",
+      chair: chairs.cyb,
   ),
   settings: (
     title_page: (
