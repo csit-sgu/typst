@@ -22,13 +22,6 @@
   title: (
     minobrnauki: "МИНОБРНАУКИ РОССИИ\nФедеральное государственное бюджетное образовательное учреждение\nвысшего образования\n",
     sgu: ["САРАТОВСКИЙ НАЦИОНАЛЬНЫЙ ИССЛЕДОВАТЕЛЬСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ ИМЕНИ~Н.~Г.~ЧЕРНЫШЕВСКОГО"],
-    chairs: (
-      cyb: "математической кибернетики и компьютерных наук",
-      kb: "теоретических основ компьютерной безопасности и криптографии ",
-      sau: "системного анализа и автоматического управления",
-      info_prog: "информатики и программирования",
-      diskr: "дискретной математики и информационных технологий",
-    ),
     city: "Саратов",
     worktypes: (
       referat: [РЕФЕРАТ],
@@ -218,10 +211,10 @@
      */
     _default_chair: (self, info) => {
       let chair = "Кафедра"
-      let chair_key = info.at("chair", default: none)
-      let show_chair = chair_key != none and info.type == "coursework"
-      let chair_string = if chair_key != none {
-        (self.utils.strglue)(chair, strings.title.chairs.at(chair_key))
+      let chair_name = info.at("chair", default: none)
+      let show_chair = chair_name != none and info.type == "coursework"
+      let chair_string = if chair_name != none {
+        (self.utils.strglue)(chair, chair_name)
       } else {
         chair // заглушка, только чтобы блок имел ту же высоту
       }
@@ -534,6 +527,14 @@
       return result
     },
   ),
+)
+
+#let chairs = (
+  cyb: "математической кибернетики и компьютерных наук",
+  kb: "теоретических основ компьютерной безопасности и криптографии ",
+  sau: "системного анализа и автоматического управления",
+  info_prog: "информатики и программирования",
+  diskr: "дискретной математики и информационных технологий",
 )
 
 #let defabbr = {
