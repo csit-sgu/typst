@@ -1,7 +1,7 @@
 #import "conf.typ": chairs, conclusion, conf, intro
 #show: conf.with(
-  title: [Применение шаблона для typst],
-  type: "referat",
+  title: [Тема работы очень длинная и интересная но не совсем длинная],
+  type: "pract",
   info: (
     author: (
       name: [Григорьева Данилы (danilasar), Смирнова Егора (aragami3070), Толстова Роберта (tolstovrob)],
@@ -10,14 +10,26 @@
       sex: "plural",
     ),
     inspector: (
-      degree: "",
-      name: "",
+      degree: "доцент, к. ф.-м. н.",
+      name: "Г. Г. Наркайтис",
     ),
+    chair: chairs.cyb,
     chair_head: (
       degree: "доцент, к. ф.-м. н.",
       name: "С. В. Миронов",
     ),
-    chair: chairs.cyb,
+    // Блок с информацией для отчета о практике
+    pract: (
+      type: "учебная",
+      term: 2,
+      // duration_weeks: 2,
+      start_date: "01.07.2026",
+      finish_date: "13.01.2027",
+      inspector: (
+        degree: "доцент, к. ф.-м. н.",
+        name: "С. В. Миронов",
+      ),
+    ),
   ),
   settings: (
     title_page: (
