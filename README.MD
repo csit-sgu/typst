@@ -1,10 +1,9 @@
 Пример использования:
 ```typst
 #import "conf.typ" : conf, chairs
-#import "conf.typ" : turn-on-first-line-indentation
 #show: conf.with(
   title: [Тема работы],
-  type: "referat",
+  type: "coursework",
   info: (
       author: (
         name: [Григорьева Данилы Евгеньевича],
