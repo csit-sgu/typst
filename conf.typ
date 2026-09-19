@@ -90,7 +90,7 @@
 
 #let modules = (
   /*
-   * Модуль информации об авторе Позволяет получать более полную и
+   * Модуль информации об авторе. Позволяет получать более полную и
    * отформатированную информацию об авторе: студент/студентки/студентов
    * (get_author_sex), номер курса, группы и так далее. Конечно, некоторые из
    * этих вещей в открытом виде лежат в словаре author, но некоторые данные
@@ -183,7 +183,36 @@
     },
   ),
   /*
-   * Модуль титульного листа Здесь происходит генерация титульного листа и
+   * Модуль информации о практике.
+   */
+  pract_info: (
+    /* Генерирует строку с продолжительностью практики.
+     * Если заданы start_date и finish_date, a duration_weeks нет,
+     * то она вычисляется автоматически
+     * Принимает:
+     *  - start_date - дата начала, строка вида ДД.ММ.ГГГГ
+     *  - finish_date - дата окончания, строка вида ДД.ММ.ГГГГ
+     *  - finish_date - дата окончания, строка вида ДД.ММ.ГГГГ
+     * Возвращает:
+     *   строку вида "X нед."
+     */
+    get_duration_weeks: (self, pract) => {
+      let weeks = if (pract.duration_weeks == none) {
+        if (pract.start_date != none and pract.finish_date != none) {
+          let start = (self.utils.parse_date)(pract.start_date)
+          let finish = (self.utils.parse_date)(pract.finish_date)
+          calc.floor((finish - start).weeks())
+        } else {
+          ""
+        }
+      } else {
+        pract.duration_weeks
+      }
+      return str(weeks) + " нед."
+    },
+  ),
+  /*
+   * Модуль титульного листа. Здесь происходит генерация титульного листа и
    * определяются все необходимые для этого методы. Поскольку его создание ---
    * задача не такая уж и тривиальная, здесь есть много приватных методов и ваш
    * покорный слуга ещё раз напоминает о нежелательности их вызова извне. Если
@@ -209,20 +238,18 @@
     /*
      * Отвечает за вывод названия кафедры на титульном листе
      */
-    _default_chair: (self, info) => {
+    _default_chair: (self, info, data) => {
       let chair = "Кафедра"
-      let chair_name = info.at("chair", default: none)
-      let show_chair = chair_name != none and info.type == "coursework"
-      let chair_string = if chair_name != none {
-        (self.utils.strglue)(chair, chair_name)
+      let show_chair = data.chair != none and info.type == "coursework"
+      let chair_string = if data.chair != none {
+        (self.utils.strglue)(chair, data.chair)
       } else {
-        chair // заглушка, только чтобы блок имел ту же высоту
+        chair
       }
       let chair_block = align(center, {
-        v(0.5em)
         text(chair_string)
       })
-      if show_chair {
+      if info.type == "coursework" {
         chair_block
       } else {
         hide(chair_block)
@@ -235,23 +262,44 @@
      * Информация о проверяющем преподавателе генерируется не здесь по
      * историческим причинам.
      */
-    _default_body: data => {
-      set align(center)
-      v(2cm)
-      text(weight: "bold", upper(data.title))
-      v(0.3em)
-      par(data.worktype)
-      v(2.1cm)
-      set align(left)
-      text(data.group + "\n")
-      text(data.speciality + "\n")
-      text(data.faculty + "\n" + data.author)
+    _default_body: (self, info, data) => {
+      if (info.type == "pract") {
+        set align(center)
+        text(weight: "bold", upper(data.title))
+        v(1cm)
+        set align(left)
+        text(data.group + " " + data.faculty + "\n")
+        text(data.author + "\n")
+        v(0.4cm)
+        text("вид практики: " + data.pract.type + "\n")
+        text("кафедра: " + data.chair + "\n")
+        text("курс: " + data.pract.course + "\n")
+        text("семестр: " + data.pract.term + "\n")
+        text(
+          "продолжительность: "
+            + data.pract.duration_weeks
+            + ", c "
+            + data.pract.start_date
+            + " по "
+            + data.pract.finish_date
+            + "\n",
+        )
+      } else {
+        set align(center)
+        text(weight: "bold", upper(data.title))
+        v(0.3em)
+        par(data.worktype)
+        v(2.1cm)
+        set align(left)
+        text(data.group + "\n")
+        text(data.speciality + "\n")
+        text(data.faculty + "\n" + data.author)
+      }
     },
     /*
      * Отвечает за вывод города и года на титульном листе
      */
     _default_footer: () => {
-      v(1fr)
       set align(center)
       text(strings.title.city + " " + str(datetime.today().year()))
     },
@@ -271,16 +319,44 @@
     /*
      * Блок подписей для титульного листа
      */
-    _default_signatures: (self, info) => {
+    _default_signatures: (self, info, data) => {
       let inspector_annotation = if (info.type == "referat") {
-        "Проверено :"
+        "Проверено:"
       } else if (info.type == "coursework") {
         "Научный руководитель"
+      } else if (info.type == "pract") {
+        [Руководитель практики от университета,#v(1em)]
       }
-      (self.title._signature)(inspector_annotation, info.inspector.degree, info.inspector.name)
+      (self.title._signature)(inspector_annotation, data.inspector.degree, data.inspector.name)
+
       if (info.type == "coursework") {
-        (self.title._signature)("Заведующий кафедрой", info.chair_head.degree, info.chair_head.name)
+        (self.title._signature)("Заведующий кафедрой", data.chair_head.degree, data.chair_head.name)
       }
+      if (info.type == "pract") {
+        (self.title._signature)(
+          [Руководитель практики от организации (учреждения, предприятия),#v(1em)],
+          data.pract.inspector.degree,
+          data.pract.inspector.name,
+        )
+      }
+    },
+    _default_pactice_approved: data => {
+      align(right, box(align(left)[
+        УТВЕРЖДАЮ#linebreak()
+        Зав. кафедрой,#linebreak()
+        #data.chair_head.degree#linebreak()
+        #box(line(length: 3.9cm, stroke: .4pt)) #text(data.chair_head.name)
+      ]))
+    },
+    _default_practice_title_page: info => {
+      let title = info.at("title", default: none)
+      pagebreak()
+      align(horizon)[
+        #par(
+          justify: true,
+          first-line-indent: (amount: indent, all: true),
+        )[Тема практики:"#title"]
+      ]
     },
     /*
      * Строка "студента такой-то группы" для титульного листа
@@ -314,6 +390,9 @@
       if info.type == "nir" {
         return [ОТЧЁТ О НАУЧНО-ИССЛЕДОВАТЕЛЬСКОЙ РАБОТЕ]
       }
+      if info.type == "pract" {
+        return [ОТЧЁТ О ПРАКТИКЕ]
+      }
       return info.at("title", default: [Тема работы])
     },
     /*
@@ -322,12 +401,16 @@
      *  - info - информация о документе
      * Возвращает:
      *  - Словарь:
-     *     title: Заголовок
-     *     worktype: Тип работы
+     *     title: заголовок
+     *     worktype: тип работы
      *     group: студент(а|ки|ов) s курса sex группы
      *     specialty: направления 69.14.88 --- Специальность
      *     faculty: факультета XXX
      *     author: автор(ы)? работы
+     *     chair: название кафедры
+     *     chair_head: информация о зав. кафедрой
+     *     inspector: информация о проверяющем (научном руководителе)
+     *     pract: данные о практике
      */
     _get_strings: (self, info) => {
       let author = info.at("author", default: (:))
@@ -339,6 +422,45 @@
         (self.author_info.get_speciality)(author),
       )
       let faculty_string = "факультета " + author.faculty
+
+      let chair = info.at("chair", default: none)
+      let chair_head = info.at("chair_head", default: (:))
+      let chait_head_info = (
+        degree: chair_head.at("degree", default: none),
+        name: chair_head.at("name", default: none),
+      )
+
+      let inspector = info.at("inspector", default: (:))
+      let inspector_info = (
+        degree: inspector.at("degree", default: none),
+        name: inspector.at("name", default: none),
+      )
+
+      let pract = info.at("pract", default: (:))
+      let pract_info = (
+        type: pract.at("type", default: none),
+        term: pract.at("term", default: none),
+        course: (self.author_info.get_author_course)(author),
+        duration_weeks: pract.at("duration_weeks", default: none),
+        start_date: pract.at("start_date", default: none),
+        finish_date: pract.at("finish_date", default: none),
+      )
+      pract_info.duration_weeks = (self.pract_info.get_duration_weeks)(
+        self,
+        pract_info,
+      )
+      if pract_info.term != none {
+        pract_info.term = str(pract_info.term)
+      }
+      pract_info.start_date += " г."
+      pract_info.finish_date += " г."
+
+      let pract_inspector = pract.at("inspector", default: none)
+      pract_info.inspector = (
+        degree: pract_inspector.at("degree", default: none),
+        name: pract_inspector.at("name", default: none),
+      )
+
       return (
         title: title_string,
         worktype: worktype,
@@ -346,6 +468,10 @@
         speciality: speciality_string,
         faculty: faculty_string,
         author: author.name,
+        chair: chair,
+        chair_head: chait_head_info,
+        inspector: inspector_info,
+        pract: pract_info,
       )
     },
     /*
@@ -356,15 +482,30 @@
     make: (self, info) => {
       let strs = (self.title._get_strings)(self, info)
       (self.title._default_header)()
-      (self.title._default_chair)(self, info)
-      (self.title._default_body)(strs)
-      v(1fr)
-      (self.title._default_signatures)(self, info)
-      (self.title._default_footer)()
+      v(0.5em)
+      (self.title._default_chair)(self, info, strs)
+
+      if (info.type == "pract") {
+        v(0.9cm)
+        (self.title._default_pactice_approved)(strs)
+        v(2.3cm)
+        (self.title._default_body)(self, info, strs)
+        v(1fr)
+        (self.title._default_signatures)(self, info, strs)
+        v(1fr)
+        (self.title._default_practice_title_page)(info)
+      } else {
+        v(2cm)
+        (self.title._default_body)(self, info, strs)
+        v(1fr)
+        (self.title._default_signatures)(self, info, strs)
+        v(1fr)
+        (self.title._default_footer)()
+      }
     },
   ),
   /*
-   * Модуль генерации документа Здесь содержатся методы, влияющие на вид всего
+   * Модуль генерации документа. Здесь содержатся методы, влияющие на вид всего
    * документа в целом. Главный из них --- make --- вызывается из точки входа в
    * стилевой файл и отвечает за всё оформление выходного документа.
    */
@@ -424,6 +565,7 @@
      * Генерирует весь документ
      * Принимает:
      *  - info - информация о документе
+     *  - settings - настройки документе
      *  - doc  - содержимое документа
      */
     make: (self, info: (), settings, doc) => {
@@ -498,7 +640,7 @@
     },
   ),
   /*
-   * Помощник Модуль-помощник не содержит особой функциональности и не имеет
+   * Помощник. Модуль-помощник не содержит особой функциональности и не имеет
    * конкретного назначения, но содержащиеся в нём методы могут быть полезны
    * где угодно и не привязаны к конкретной части документа
    */
@@ -525,6 +667,13 @@
         result = result + string
       }
       return result
+    },
+    /*
+     * Рабирает строку вида ДД.ММ.ГГГГ в datetime
+     */
+    parse_date: string => {
+      let (d, m, y) = string.split(".").map(int)
+      datetime(year: y, month: m, day: d)
     },
   ),
 )
