@@ -348,9 +348,8 @@
         #box(line(length: 3.9cm, stroke: .4pt)) #text(data.chair_head.name)
       ]))
     },
-    _default_practice_title_page: info => {
+    _default_pract_title_page: info => {
       let title = info.at("title", default: none)
-      pagebreak()
       align(horizon)[
         #par(
           justify: true,
@@ -492,8 +491,8 @@
         (self.title._default_body)(self, info, strs)
         v(1fr)
         (self.title._default_signatures)(self, info, strs)
-        v(1fr)
-        (self.title._default_practice_title_page)(info)
+        pagebreak()
+        (self.title._default_pract_title_page)(info)
       } else {
         v(2cm)
         (self.title._default_body)(self, info, strs)
