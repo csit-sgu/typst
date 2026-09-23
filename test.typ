@@ -1,7 +1,7 @@
 #import "conf.typ": chairs, conclusion, conf, intro
 #show: conf.with(
-  title: [Тема работы очень длинная и интересная но не совсем длинная],
-  type: "pract",
+  title: [Применение шаблона для typst],
+  type: "coursework",
   info: (
     author: (
       name: [Григорьева Данилы (danilasar), Смирнова Егора (aragami3070), Толстова Роберта (tolstovrob)],
