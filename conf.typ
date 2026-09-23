@@ -201,7 +201,7 @@
         if (pract.start_date != none and pract.finish_date != none) {
           let start = (self.utils.parse_date)(pract.start_date)
           let finish = (self.utils.parse_date)(pract.finish_date)
-          calc.floor((finish - start).weeks())
+          calc.floor((finish - start + duration(days: 1)).weeks())
         } else {
           ""
         }
