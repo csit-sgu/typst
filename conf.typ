@@ -26,10 +26,12 @@
     worktypes: (
       referat: [РЕФЕРАТ],
       coursework: [КУРСОВАЯ РАБОТА],
-      diploma: [Выпускная квалификационная работа],
-      autoref: [работа],
-      nir: [работа],
-      pract: [Отчёт о практике],
+      diploma_bachelor: [БАКАЛАВРСКАЯ РАБОТА],
+      diploma_master: [МАГИСТЕРСКАЯ РАБОТА],
+      diploma_spec: [ДИПЛОМНАЯ РАБОТА],
+      autoref: [АВТОРЕФЕРАТ],
+      nir: [ОТЧЁТ О НАУЧНО-ИССЛЕДОВАТЕЛЬСКОЙ РАБОТЕ],
+      pract: [ОТЧЁТ О ПРАКТИКЕ],
     ),
     from_course: "курса",
     from_group: "группы",
@@ -249,7 +251,7 @@
       let chair_block = align(center, {
         text(chair_string)
       })
-      if info.type == "coursework" {
+      if info.type == "coursework" or info.type == "diploma" {
         chair_block
       } else {
         hide(chair_block)
@@ -322,14 +324,14 @@
     _default_signatures: (self, info, data) => {
       let inspector_annotation = if (info.type == "referat") {
         "Проверено:"
-      } else if (info.type == "coursework") {
+      } else if (info.type == "coursework" or info.type == "diploma") {
         "Научный руководитель"
       } else if (info.type == "pract") {
         [Руководитель практики от университета,#v(1em)]
       }
       (self.title._signature)(inspector_annotation, data.inspector.degree, data.inspector.name)
 
-      if (info.type == "coursework") {
+      if (info.type == "coursework" or info.type == "diploma") {
         (self.title._signature)("Заведующий кафедрой", data.chair_head.degree, data.chair_head.name)
       }
       if (info.type == "pract") {
@@ -374,23 +376,37 @@
       return result
     },
     /*
-     * Получает заголовок титульного листа.
+     * Генерирует тип работы.
      * Принимает:
      *  - info - информация о документе
      * Возвращает:
+     *  - Cтроку с типом работы для вывода на титульник
+     */
+    _get_worktype_string: info => {
+      let worktypes = strings.title.worktypes
+      if info.type == "diploma" {
+        let author = info.at("author", default: (:))
+        let grade = author.at("grade", default: none)
+        if grade == "master" { return worktypes.diploma_master }
+        if grade == "spec" { return worktypes.diploma_spec }
+        return worktypes.diploma_bachelor
+      }
+      return worktypes.at(info.type, default: [])
+    },
+    /*
+     * Генерирует заголовок титульного листа.
+     * Принимает:
+     *  - info - информация о документе
+     *  - worktype - тип работы для вывода на титульник
+     * Возвращает:
      *  - В зависимости от типа:
-     *    - Тему работы, если это не автореферат и не отчёт по НИРу
+     *    - Тему работы, если это не автореферат, не отчёт по НИРу
+     *      или отчет о практике
      *    - В противном случае названия соответствующих типов работ
      */
-    _get_title_string: info => {
-      if info.type == "autoref" {
-        return [АВТОРЕФЕРАТ]
-      }
-      if info.type == "nir" {
-        return [ОТЧЁТ О НАУЧНО-ИССЛЕДОВАТЕЛЬСКОЙ РАБОТЕ]
-      }
-      if info.type == "pract" {
-        return [ОТЧЁТ О ПРАКТИКЕ]
+    _get_title_string: (info, worktype) => {
+      if ("autoref", "nir", "pract").contains(info.type) {
+        return worktype
       }
       return info.at("title", default: [Тема работы])
     },
@@ -413,8 +429,8 @@
      */
     _get_strings: (self, info) => {
       let author = info.at("author", default: (:))
-      let title_string = (self.title._get_title_string)(info)
-      let worktype = strings.title.worktypes.at(info.type, default: [])
+      let worktype = (self.title._get_worktype_string)(info)
+      let title_string = (self.title._get_title_string)(info, worktype)
       let group_string = (self.title._get_author_string)(self, author)
       let speciality_string = (self.utils.strglue)(
         strings.title.from_speciality,

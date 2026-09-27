@@ -8,6 +8,7 @@
       faculty: [КНиИТ],
       group: "251",
       sex: "plural",
+      // grade: "bachelor",
     ),
     inspector: (
       degree: "доцент, к. ф.-м. н.",
