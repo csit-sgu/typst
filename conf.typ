@@ -312,10 +312,10 @@
       annotation
       v(line_spacing, weak: true)
       grid(
-        columns: (1fr,) * 3,
-        align: (left, center, right),
-        row-gutter: 5pt,
-        post, block(inset: (y: 10pt), line(length: 3cm, stroke: .4pt)), name,
+        columns: (7cm, 3cm, 6cm),
+        column-gutter: 0.25em,
+        align: (left, center + bottom, right),
+        post, box(line(length: 3cm, stroke: .4pt)), name,
       )
     },
     /*
@@ -327,16 +327,18 @@
       } else if (info.type == "coursework" or info.type == "diploma") {
         "Научный руководитель"
       } else if (info.type == "pract") {
-        [Руководитель практики от университета,#v(1em)]
+        "Руководитель практики от университета,"
+        v(12pt)
       }
       (self.title._signature)(inspector_annotation, data.inspector.degree, data.inspector.name)
+      v(14pt)
 
       if (info.type == "coursework" or info.type == "diploma") {
         (self.title._signature)("Заведующий кафедрой", data.chair_head.degree, data.chair_head.name)
       }
       if (info.type == "pract") {
         (self.title._signature)(
-          [Руководитель практики от организации (учреждения, предприятия),#v(1em)],
+          [Руководитель практики от организации (учреждения, предприятия),#v(12pt)],
           data.pract.inspector.degree,
           data.pract.inspector.name,
         )
@@ -352,12 +354,11 @@
     },
     _default_pract_title_page: info => {
       let title = info.at("title", default: none)
-      align(horizon)[
-        #par(
-          justify: true,
-          first-line-indent: (amount: indent, all: true),
-        )[Тема практики:"#title"]
-      ]
+      v(11.8cm)
+      par(
+        justify: true,
+        first-line-indent: (amount: indent, all: true),
+      )[Тема практики:"#title"]
     },
     /*
      * Строка "студента такой-то группы" для титульного листа
@@ -505,13 +506,14 @@
         (self.title._default_pactice_approved)(strs)
         v(2.3cm)
         (self.title._default_body)(self, info, strs)
-        v(1fr)
+        v(1cm + 10pt)
         (self.title._default_signatures)(self, info, strs)
         pagebreak()
         (self.title._default_pract_title_page)(info)
       } else {
         v(2cm)
         (self.title._default_body)(self, info, strs)
+        v(10pt)
         v(1fr)
         (self.title._default_signatures)(self, info, strs)
         v(1fr)
