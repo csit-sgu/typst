@@ -452,30 +452,33 @@
         name: inspector.at("name", default: none),
       )
 
-      let pract = info.at("pract", default: (:))
-      let pract_info = (
-        type: pract.at("type", default: none),
-        term: pract.at("term", default: none),
-        course: (self.author_info.get_author_course)(author),
-        duration_weeks: pract.at("duration_weeks", default: none),
-        start_date: pract.at("start_date", default: none),
-        finish_date: pract.at("finish_date", default: none),
-      )
-      pract_info.duration_weeks = (self.pract_info.get_duration_weeks)(
-        self,
-        pract_info,
-      )
-      if pract_info.term != none {
-        pract_info.term = str(pract_info.term)
-      }
-      pract_info.start_date += " г."
-      pract_info.finish_date += " г."
+      let pract_info = (:)
+      if info.type == "pract" {
+        let pract = info.at("pract", default: (:))
+        pract_info = (
+          type: pract.at("type", default: none),
+          term: pract.at("term", default: none),
+          course: (self.author_info.get_author_course)(author),
+          duration_weeks: pract.at("duration_weeks", default: none),
+          start_date: pract.at("start_date", default: none),
+          finish_date: pract.at("finish_date", default: none),
+        )
+        pract_info.duration_weeks = (self.pract_info.get_duration_weeks)(
+          self,
+          pract_info,
+        )
+        if pract_info.term != none {
+          pract_info.term = str(pract_info.term)
+        }
+        pract_info.start_date += " г."
+        pract_info.finish_date += " г."
 
-      let pract_inspector = pract.at("inspector", default: none)
-      pract_info.inspector = (
-        degree: pract_inspector.at("degree", default: none),
-        name: pract_inspector.at("name", default: none),
-      )
+        let pract_inspector = pract.at("inspector", default: none)
+        pract_info.inspector = (
+          degree: pract_inspector.at("degree", default: none),
+          name: pract_inspector.at("name", default: none),
+        )
+      }
 
       return (
         title: title_string,
@@ -772,7 +775,7 @@
  */
 #let conf(
   title: none,
-  info: (),
+  info: (:),
   type: "referat",
   settings: (),
   doc,
