@@ -83,6 +83,67 @@
   move(dx: code_block_move, zebraw(raw(block: true, code.text)))
 }
 
+// Виды фигур, нумерация которых ведётся в пределах раздела
+#let section_figure_kinds = (image, table)
+
+/*
+ * Сбрасывает счётчики фигур в начале раздела
+ */
+#let reset_figure_counters() = {
+  for kind in section_figure_kinds {
+    counter(figure.where(kind: kind)).update(0)
+  }
+}
+
+#let annex-letters = "АБВГДЕЖЗИКЛМНПРСТУФХЦШЩЭЮЯABCDEFGHJKLMNPQRSTUVWXYZ"
+#let annex-numbering(..nums) = {
+  let number = nums.pos().first() - 1
+  annex-letters.clusters().at(number, default: str(number))
+}
+
+/*
+ * Формирует номер фигуры вида N.x (A.x в приложениях)
+ * Принимает:
+ *  - loc - расположение фигуры
+ *  - n - номер фигуры внутри раздела
+ * Возвращает:
+ *  - номер фигуры, где номер раздела равен 0 для ненумерованных разделов
+ *    (введение, заключение и т. п.), номеру раздела для обычных разделов и
+ *    букве для приложений
+ * Примечание: номер раздела вычисляется по месту фигуры, поэтому функция
+ * используется и в подписи, и в ссылках на фигуру.
+ */
+#let figure_number(loc, n) = {
+  let headings = query(heading.where(level: 1).before(loc))
+  if headings.len() == 0 or headings.last().numbering == none {
+    return "0." + str(n)
+  }
+  let section = counter(heading).at(loc).first()
+  if state("annex", false).at(loc) {
+    return annex-numbering(section) + "." + str(n)
+  }
+  str(section) + "." + str(n)
+}
+
+/*
+ * Выводит ссылку на фигуру. Нужна потому, что функция нумерации при ссылке
+ * вычисляется в контексте ссылки, а номер раздела нужно брать по месту
+ * фигуры.
+ */
+#let figure_ref(it) = {
+  let el = it.element
+  if el == none or el.func() != figure or el.numbering == none {
+    return it
+  }
+  let loc = el.location()
+  let number = figure_number(loc, el.counter.at(loc).first())
+  let supplement = if it.supplement == auto { el.supplement } else { it.supplement }
+  if supplement not in (none, []) {
+    number = [#supplement~#number]
+  }
+  link(loc, number)
+}
+
 #let code-block(..args, code) = {
   set text(size: code_font_size)
   move(dx: code_block_move, zebraw(..args, code))
@@ -334,6 +395,7 @@
       set text(size: font_size)
       if it.depth == 1 {
         pagebreak(weak: true)
+        reset_figure_counters()
       }
       if strings.caps_headings.contains(it.body) {
         align(center, it.body)
@@ -440,13 +502,18 @@
       set page(numbering: "1")
       set math.equation(numbering: "(1)")
 
+      set table(stroke: 0.5pt)
+
+      set figure(numbering: n => context figure_number(here(), n))
+      show ref: figure_ref
       set figure.caption(separator: [ -- ])
       show figure.caption: set text(size: figure_font_size)
 
+      show figure.where(kind: image): set figure(supplement: "Рисунок")
       show figure.where(kind: table): set figure.caption(position: top)
       show figure.where(kind: table): set text(size: figure_font_size)
+      show figure.where(kind: table): set align(left)
       show figure.where(kind: table): set block(breakable: true)
-      show figure.caption.where(kind: table): set align(left)
 
       set terms(separator: [ --- ])
 
@@ -515,12 +582,6 @@
   heading(numbering: none, outlined: true, [ЗАКЛЮЧЕНИЕ])
 }
 
-#let annex-letters = "АБВГДЕЖЗИКЛМНПРСТУФХЦШЩЭЮЯABCDEFGHJKLMNPQRSTUVWXYZ"
-#let annex-numbering(..nums) = {
-  let number = nums.pos().first() - 1
-  annex-letters.clusters().at(number, default: str(number))
-}
-
 // thx https://github.com/typst-g7-32/modern-g7-32
 #let annexes-start(it) = {
   set heading(
@@ -532,6 +593,7 @@
   show heading: it => {
     if it.depth == 1 {
       pagebreak(weak: true)
+      reset_figure_counters()
     }
     set text(size: font_size)
     let letter = counter(heading).display(annex-numbering)
