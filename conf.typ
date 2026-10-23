@@ -87,11 +87,32 @@
 #let section_figure_kinds = (image, table)
 
 /*
- * Сбрасывает счётчики фигур в начале раздела
+ * Проверяет, находится ли точка документа в ненумерованном разделе
+ * (введение, заключение и т. п.)
+ * Принимает:
+ *  - loc - расположение
  */
-#let reset_figure_counters() = {
+#let in_unnumbered_section(loc) = {
+  let headings = query(heading.where(level: 1).before(loc))
+  headings.len() == 0 or headings.last().numbering == none
+}
+
+/*
+ * Сбрасывает счётчики фигур в начале раздела. Ненумерованные разделы
+ * (введение, заключение и т. п.) имеют общую сквозную нумерацию 0.x, чтобы
+ * номера фигур, например, во введении и заключении не повторялись.
+ * Принимает:
+ *  - it - заголовок первого уровня
+ */
+#let reset_figure_counters(it) = context {
   for kind in section_figure_kinds {
-    counter(figure.where(kind: kind)).update(0)
+    let start = 0
+    if it.numbering == none {
+      start = query(figure.where(kind: kind).before(here()))
+        .filter(f => in_unnumbered_section(f.location()))
+        .len()
+    }
+    counter(figure.where(kind: kind)).update(start)
   }
 }
 
@@ -108,14 +129,13 @@
  *  - n - номер фигуры внутри раздела
  * Возвращает:
  *  - номер фигуры, где номер раздела равен 0 для ненумерованных разделов
- *    (введение, заключение и т. п.), номеру раздела для обычных разделов и
+ *    (введение, заключение и т. п., нумерация в них сквозная), номеру раздела для обычных разделов и
  *    букве для приложений
  * Примечание: номер раздела вычисляется по месту фигуры, поэтому функция
  * используется и в подписи, и в ссылках на фигуру.
  */
 #let figure_number(loc, n) = {
-  let headings = query(heading.where(level: 1).before(loc))
-  if headings.len() == 0 or headings.last().numbering == none {
+  if in_unnumbered_section(loc) {
     return "0." + str(n)
   }
   let section = counter(heading).at(loc).first()
@@ -395,7 +415,7 @@
       set text(size: font_size)
       if it.depth == 1 {
         pagebreak(weak: true)
-        reset_figure_counters()
+        reset_figure_counters(it)
       }
       if strings.caps_headings.contains(it.body) {
         align(center, it.body)
@@ -593,7 +613,7 @@
   show heading: it => {
     if it.depth == 1 {
       pagebreak(weak: true)
-      reset_figure_counters()
+      reset_figure_counters(it)
     }
     set text(size: font_size)
     let letter = counter(heading).display(annex-numbering)
