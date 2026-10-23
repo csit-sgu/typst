@@ -83,6 +83,104 @@
   move(dx: code_block_move, zebraw(raw(block: true, code.text)))
 }
 
+// Включена ли нумерация по разделам (settings.sec_numbering.enabled)
+#let sec_numbering = state("sec_numbering", false)
+
+// Виды фигур, нумерация которых ведётся в пределах раздела
+#let section_figure_kinds = (image, table)
+
+// Счётчики, которые при нумерации по разделам сбрасываются в начале раздела
+#let section_counters = (
+  section_figure_kinds.map(kind => figure.where(kind: kind)) + (math.equation,)
+)
+
+/*
+ * Проверяет, находится ли точка документа в ненумерованном разделе
+ * (введение, заключение)
+ * Принимает:
+ *  - loc - расположение
+ */
+#let in_unnumbered_section(loc) = {
+  let headings = query(heading.where(level: 1).before(loc))
+  headings.len() == 0 or headings.last().numbering == none
+}
+
+/*
+ * Сбрасывает счётчики фигур и формул в начале раздела. Ненумерованные
+ * разделы (введение, заключение и т. п.) имеют общую сквозную нумерацию 0.x,
+ * чтобы номера, например, во введении и заключении не повторялись.
+ * Принимает:
+ *  - it - заголовок первого уровня
+ */
+#let reset_section_counters(it) = context {
+  for key in section_counters {
+    let start = 0
+    if it.numbering == none {
+      start = query(selector(key).before(here()))
+        .filter(el => el.numbering != none)
+        .filter(el => el.func() != math.equation or el.block)
+        .filter(el => in_unnumbered_section(el.location()))
+        .len()
+    }
+    counter(key).update(start)
+  }
+}
+
+#let annex-letters = "АБВГДЕЖЗИКЛМНПРСТУФХЦШЩЭЮЯABCDEFGHJKLMNPQRSTUVWXYZ"
+#let annex-numbering(..nums) = {
+  let number = nums.pos().first() - 1
+  annex-letters.clusters().at(number, default: str(number))
+}
+
+/*
+ * Формирует номер фигуры или формулы
+ * Принимает:
+ *  - loc - расположение фигуры или формулы
+ *  - n - её порядковый номер
+ * Возвращает:
+ *  - номер вида N.x, где N равен 0 для ненумерованных разделов
+ *    (введение, заключение и т. п., нумерация в них сквозная), номеру
+ *    раздела для обычных разделов и букве для приложений
+ * Примечание: номер раздела вычисляется по месту элемента, поэтому функция
+ * используется и в подписи, и в ссылках.
+ */
+#let section_number(loc, n) = {
+  if in_unnumbered_section(loc) {
+    return "0." + str(n)
+  }
+  let section = counter(heading).at(loc).first()
+  if state("annex", false).at(loc) {
+    return annex-numbering(section) + "." + str(n)
+  }
+  str(section) + "." + str(n)
+}
+
+/*
+ * Выводит ссылку на фигуру или формулу. Нужна потому, что функция нумерации
+ * при ссылке вычисляется в контексте ссылки, а номер раздела нужно брать по
+ * месту самого элемента.
+ */
+#let section_ref(it) = {
+  let el = it.element
+  if el == none or el.numbering == none {
+    return it
+  }
+  let loc = el.location()
+  let number = none
+  if el.func() == figure {
+    number = section_number(loc, el.counter.at(loc).first())
+  } else if el.func() == math.equation {
+    number = "(" + section_number(loc, counter(math.equation).at(loc).first()) + ")"
+  } else {
+    return it
+  }
+  let supplement = if it.supplement == auto { el.supplement } else { it.supplement }
+  if supplement not in (none, []) {
+    number = [#supplement~#number]
+  }
+  link(loc, number)
+}
+
 #let code-block(..args, code) = {
   set text(size: code_font_size)
   move(dx: code_block_move, zebraw(..args, code))
@@ -334,6 +432,9 @@
       set text(size: font_size)
       if it.depth == 1 {
         pagebreak(weak: true)
+        context if sec_numbering.get() {
+          reset_section_counters(it)
+        }
       }
       if strings.caps_headings.contains(it.body) {
         align(center, it.body)
@@ -440,13 +541,24 @@
       set page(numbering: "1")
       set math.equation(numbering: "(1)")
 
+      set table(stroke: 0.5pt)
+
+      // Нумерация рисунков, таблиц и формул по разделам
+      let sec_numbering_enabled = settings.sec_numbering.at("enabled", default: false)
+      sec_numbering.update(sec_numbering_enabled)
+      set figure(numbering: n => context section_number(here(), n)) if sec_numbering_enabled
+      set math.equation(
+        numbering: n => context "(" + section_number(here(), n) + ")",
+      ) if sec_numbering_enabled
+      show ref: it => if sec_numbering_enabled { section_ref(it) } else { it }
       set figure.caption(separator: [ -- ])
       show figure.caption: set text(size: figure_font_size)
 
+      show figure.where(kind: image): set figure(supplement: "Рисунок")
       show figure.where(kind: table): set figure.caption(position: top)
       show figure.where(kind: table): set text(size: figure_font_size)
+      show figure.where(kind: table): set align(left)
       show figure.where(kind: table): set block(breakable: true)
-      show figure.caption.where(kind: table): set align(left)
 
       set terms(separator: [ --- ])
 
@@ -515,12 +627,6 @@
   heading(numbering: none, outlined: true, [ЗАКЛЮЧЕНИЕ])
 }
 
-#let annex-letters = "АБВГДЕЖЗИКЛМНПРСТУФХЦШЩЭЮЯABCDEFGHJKLMNPQRSTUVWXYZ"
-#let annex-numbering(..nums) = {
-  let number = nums.pos().first() - 1
-  annex-letters.clusters().at(number, default: str(number))
-}
-
 // thx https://github.com/typst-g7-32/modern-g7-32
 #let annexes-start(it) = {
   set heading(
@@ -532,6 +638,9 @@
   show heading: it => {
     if it.depth == 1 {
       pagebreak(weak: true)
+      context if sec_numbering.get() {
+        reset_section_counters(it)
+      }
     }
     set text(size: font_size)
     let letter = counter(heading).display(annex-numbering)
@@ -575,6 +684,7 @@
   info.title = title
   info.type = type
   settings.title_page = settings.at("title_page", default: (:))
+  settings.sec_numbering = settings.at("sec_numbering", default: (:))
   (modules.document.make)(
     modules,
     info: info,

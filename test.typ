@@ -21,6 +21,9 @@
     contents_page: (
       enabled: true,
     ),
+    sec_numbering: (
+      enabled: true,
+    ),
   ),
 )
 
