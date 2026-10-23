@@ -1,17 +1,35 @@
-#import "conf.typ": conf, intro, conclusion
+#import "conf.typ": chairs, conclusion, conf, intro
 #show: conf.with(
   title: [Применение шаблона для typst],
-  type: "referat",
+  type: "coursework",
   info: (
     author: (
       name: [Григорьева Данилы (danilasar), Смирнова Егора (aragami3070), Толстова Роберта (tolstovrob)],
       faculty: [КНиИТ],
       group: "251",
       sex: "plural",
+      // grade: "bachelor",
     ),
     inspector: (
-      degree: "",
-      name: "",
+      degree: "доцент, к. ф.-м. н.",
+      name: "Г. Г. Наркайтис",
+    ),
+    chair: chairs.cyb,
+    chair_head: (
+      degree: "доцент, к. ф.-м. н.",
+      name: "С. В. Миронов",
+    ),
+    // Блок с информацией для отчета о практике
+    pract: (
+      type: "учебная",
+      term: 2,
+      // duration_weeks: 2,
+      start_date: "01.07.2026",
+      finish_date: "13.01.2027",
+      inspector: (
+        degree: "доцент, к. ф.-м. н.",
+        name: "С. В. Миронов",
+      ),
     ),
   ),
   settings: (
@@ -26,13 +44,33 @@
 
 #intro
 
-Шаблон автоматически определяет и оформляет особенным образом соответствующие секции:
-- Содержание
-- Введение
-- Заключение
-- Список использованных источников
-- Определения, обозначения и сокращения
-- Обозначения и сокращения
+```typ
+#import "@local/ssu-template:0.0.1": conf
+#show: conf.with(
+  title: [Тема работы],
+  type: "referat",
+  info: (
+    author: (
+      name: [Григорьева Данилы Евгеньевича],
+      faculty: [КНиИТ],
+      group: "151",
+      sex: "male",
+    ),
+    inspector: (
+      degree: "доцент, к. ф.-м. н.",
+      name: "С. В. Миронов",
+    ),
+  ),
+  settings: (
+    title_page: (
+      enabled: true,
+    ),
+    contents_page: (
+      enabled: true,
+    ),
+  ),
+)
+```
 
 = Пример работы шаблона
 == Основные элементы
