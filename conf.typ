@@ -509,8 +509,10 @@
         (self.title._default_pactice_approved)(strs)
         v(2.3cm)
         (self.title._default_body)(self, info, strs)
+        v(0.9cm)
         v(1fr)
         (self.title._default_signatures)(self, info, strs)
+        v(1fr)
         pagebreak()
         (self.title._default_pract_title_page)(info)
       } else {
