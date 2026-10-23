@@ -83,12 +83,20 @@
   move(dx: code_block_move, zebraw(raw(block: true, code.text)))
 }
 
+// Включена ли нумерация по разделам (settings.sec_numbering.enabled)
+#let sec_numbering = state("sec_numbering", false)
+
 // Виды фигур, нумерация которых ведётся в пределах раздела
 #let section_figure_kinds = (image, table)
 
+// Счётчики, которые при нумерации по разделам сбрасываются в начале раздела
+#let section_counters = (
+  section_figure_kinds.map(kind => figure.where(kind: kind)) + (math.equation,)
+)
+
 /*
  * Проверяет, находится ли точка документа в ненумерованном разделе
- * (введение, заключение и т. п.)
+ * (введение, заключение)
  * Принимает:
  *  - loc - расположение
  */
@@ -98,21 +106,23 @@
 }
 
 /*
- * Сбрасывает счётчики фигур в начале раздела. Ненумерованные разделы
- * (введение, заключение и т. п.) имеют общую сквозную нумерацию 0.x, чтобы
- * номера фигур, например, во введении и заключении не повторялись.
+ * Сбрасывает счётчики фигур и формул в начале раздела. Ненумерованные
+ * разделы (введение, заключение и т. п.) имеют общую сквозную нумерацию 0.x,
+ * чтобы номера, например, во введении и заключении не повторялись.
  * Принимает:
  *  - it - заголовок первого уровня
  */
-#let reset_figure_counters(it) = context {
-  for kind in section_figure_kinds {
+#let reset_section_counters(it) = context {
+  for key in section_counters {
     let start = 0
     if it.numbering == none {
-      start = query(figure.where(kind: kind).before(here()))
-        .filter(f => in_unnumbered_section(f.location()))
+      start = query(selector(key).before(here()))
+        .filter(el => el.numbering != none)
+        .filter(el => el.func() != math.equation or el.block)
+        .filter(el => in_unnumbered_section(el.location()))
         .len()
     }
-    counter(figure.where(kind: kind)).update(start)
+    counter(key).update(start)
   }
 }
 
@@ -123,18 +133,18 @@
 }
 
 /*
- * Формирует номер фигуры вида N.x (A.x в приложениях)
+ * Формирует номер фигуры или формулы
  * Принимает:
- *  - loc - расположение фигуры
- *  - n - номер фигуры внутри раздела
+ *  - loc - расположение фигуры или формулы
+ *  - n - её порядковый номер
  * Возвращает:
- *  - номер фигуры, где номер раздела равен 0 для ненумерованных разделов
- *    (введение, заключение и т. п., нумерация в них сквозная), номеру раздела для обычных разделов и
- *    букве для приложений
- * Примечание: номер раздела вычисляется по месту фигуры, поэтому функция
- * используется и в подписи, и в ссылках на фигуру.
+ *  - номер вида N.x, где N равен 0 для ненумерованных разделов
+ *    (введение, заключение и т. п., нумерация в них сквозная), номеру
+ *    раздела для обычных разделов и букве для приложений
+ * Примечание: номер раздела вычисляется по месту элемента, поэтому функция
+ * используется и в подписи, и в ссылках.
  */
-#let figure_number(loc, n) = {
+#let section_number(loc, n) = {
   if in_unnumbered_section(loc) {
     return "0." + str(n)
   }
@@ -146,17 +156,24 @@
 }
 
 /*
- * Выводит ссылку на фигуру. Нужна потому, что функция нумерации при ссылке
- * вычисляется в контексте ссылки, а номер раздела нужно брать по месту
- * фигуры.
+ * Выводит ссылку на фигуру или формулу. Нужна потому, что функция нумерации
+ * при ссылке вычисляется в контексте ссылки, а номер раздела нужно брать по
+ * месту самого элемента.
  */
-#let figure_ref(it) = {
+#let section_ref(it) = {
   let el = it.element
-  if el == none or el.func() != figure or el.numbering == none {
+  if el == none or el.numbering == none {
     return it
   }
   let loc = el.location()
-  let number = figure_number(loc, el.counter.at(loc).first())
+  let number = none
+  if el.func() == figure {
+    number = section_number(loc, el.counter.at(loc).first())
+  } else if el.func() == math.equation {
+    number = "(" + section_number(loc, counter(math.equation).at(loc).first()) + ")"
+  } else {
+    return it
+  }
   let supplement = if it.supplement == auto { el.supplement } else { it.supplement }
   if supplement not in (none, []) {
     number = [#supplement~#number]
@@ -415,7 +432,9 @@
       set text(size: font_size)
       if it.depth == 1 {
         pagebreak(weak: true)
-        reset_figure_counters(it)
+        context if sec_numbering.get() {
+          reset_section_counters(it)
+        }
       }
       if strings.caps_headings.contains(it.body) {
         align(center, it.body)
@@ -524,8 +543,14 @@
 
       set table(stroke: 0.5pt)
 
-      set figure(numbering: n => context figure_number(here(), n))
-      show ref: figure_ref
+      // Нумерация рисунков, таблиц и формул по разделам
+      let sec_numbering_enabled = settings.sec_numbering.at("enabled", default: false)
+      sec_numbering.update(sec_numbering_enabled)
+      set figure(numbering: n => context section_number(here(), n)) if sec_numbering_enabled
+      set math.equation(
+        numbering: n => context "(" + section_number(here(), n) + ")",
+      ) if sec_numbering_enabled
+      show ref: it => if sec_numbering_enabled { section_ref(it) } else { it }
       set figure.caption(separator: [ -- ])
       show figure.caption: set text(size: figure_font_size)
 
@@ -613,7 +638,9 @@
   show heading: it => {
     if it.depth == 1 {
       pagebreak(weak: true)
-      reset_figure_counters(it)
+      context if sec_numbering.get() {
+        reset_section_counters(it)
+      }
     }
     set text(size: font_size)
     let letter = counter(heading).display(annex-numbering)
@@ -657,6 +684,7 @@
   info.title = title
   info.type = type
   settings.title_page = settings.at("title_page", default: (:))
+  settings.sec_numbering = settings.at("sec_numbering", default: (:))
   (modules.document.make)(
     modules,
     info: info,
